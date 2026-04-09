@@ -40,7 +40,7 @@ export const attackCommand = new Command("attack")
 	.option("-H, --headers <string>", "Custom headers (JSON string)", "")
 	.option(
 		"-s, --scenario <type>",
-		"Attack scenario: bombard, ramping, soak, stealth, form-flood-1 (partnership), form-flood-2 (login)",
+		"Attack scenario: bombard, ramping, soak, stealth, form-flood-1 (partnership), form-flood-2 (login), form-flood-3 (register)",
 		CONFIG.defaultScenario,
 	)
 	.option("-o, --output <path>", "Output path for k6 summary JSON", "")
