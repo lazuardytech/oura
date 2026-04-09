@@ -12,6 +12,7 @@ interface Config {
   defaultVus: number;
   defaultDuration: string;
   defaultScenario: string;
+  defaultRpsPerVu: number;
   lastTarget: string;
 }
 
@@ -20,10 +21,11 @@ const defaultConfig: Config = {
   defaultVus: 100,
   defaultDuration: "30s",
   defaultScenario: "bombard",
+  defaultRpsPerVu: 1000,
   lastTarget: "",
 };
 
-function loadConfig(): Config {
+export function loadConfig(): Config {
   if (!fs.existsSync(CONFIG_FILE)) {
     return { ...defaultConfig };
   }
@@ -31,7 +33,7 @@ function loadConfig(): Config {
   return { ...defaultConfig, ...JSON.parse(raw) };
 }
 
-function saveConfig(config: Config) {
+export function saveConfig(config: Config) {
   if (!fs.existsSync(CONFIG_DIR)) {
     fs.mkdirSync(CONFIG_DIR, { recursive: true });
   }

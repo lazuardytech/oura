@@ -9,8 +9,14 @@ export interface AttackOptions {
   rampUp: string;
   output: string;
   noCheck: boolean;
+  stealth: boolean;
+  proxy: string;
+  thresholds: string[];
+  iterations: number;
+  rpsPerVu: number;
 }
 
+import { spawn } from "child_process";
 import { execFile } from "child_process";
 import { promisify } from "util";
 import fs from "fs";
@@ -20,6 +26,7 @@ import { logger } from "../utils/logger.js";
 import { bombardTemplate } from "./templates/bombard.js";
 import { rampingTemplate } from "./templates/ramping.js";
 import { soakTemplate } from "./templates/soak.js";
+import { stealthTemplate } from "./templates/stealth.js";
 
 const execFileAsync = promisify(execFile);
 const SCRIPTS_DIR = path.join(os.homedir(), ".oura", "scripts");
@@ -32,13 +39,14 @@ export class K6Runner {
       bombard: bombardTemplate,
       ramping: rampingTemplate,
       soak: soakTemplate,
+      stealth: stealthTemplate,
     };
   }
 
   compileScript(options: AttackOptions): string {
     const templateFn = this.templates[options.scenario];
     if (!templateFn) {
-      throw new Error(`Unknown scenario: ${options.scenario}. Available: bombard, ramping, soak`);
+      throw new Error(`Unknown scenario: ${options.scenario}. Available: bombard, ramping, soak, stealth`);
     }
     return templateFn(options);
   }
@@ -63,26 +71,44 @@ export class K6Runner {
 
     logger.info("Launching k6...\n");
 
-    try {
-      const { stdout, stderr } = await execFileAsync(k6Path, args, {
-        maxBuffer: 50 * 1024 * 1024,
+    const env: Record<string, string> = { ...process.env as Record<string, string> };
+    if (options.proxy) {
+      env.HTTP_PROXY = options.proxy;
+      env.HTTPS_PROXY = options.proxy;
+    }
+
+    return new Promise<void>((resolve, reject) => {
+      const child = spawn(k6Path, args, { env });
+
+      child.stdout.on("data", (data: Buffer) => {
+        process.stdout.write(data);
       });
 
-      if (stdout) console.log(stdout);
-      if (stderr) console.error(stderr);
-    } catch (err: any) {
-      if (err.killed) {
-        logger.error("k6 process was killed (timeout or signal)");
-      } else {
-        if (err.stdout) console.log(err.stdout);
-        if (err.stderr) console.error(err.stderr);
-        logger.error(`k6 exited with code ${err.code || "unknown"}`);
-      }
-    } finally {
-      try {
-        fs.unlinkSync(scriptPath);
-      } catch {}
-    }
+      child.stderr.on("data", (data: Buffer) => {
+        process.stderr.write(data);
+      });
+
+      child.on("close", (code: number | null, signal: string | null) => {
+        try {
+          fs.unlinkSync(scriptPath);
+        } catch {}
+
+        if (signal) {
+          reject(new Error(`k6 process was killed by signal ${signal}`));
+        } else if (code !== null && code !== 0) {
+          reject(new Error(`k6 exited with code ${code}`));
+        } else {
+          resolve();
+        }
+      });
+
+      child.on("error", (err: Error) => {
+        try {
+          fs.unlinkSync(scriptPath);
+        } catch {}
+        reject(err);
+      });
+    });
   }
 
   private async findK6(): Promise<string> {
