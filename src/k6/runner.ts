@@ -33,7 +33,7 @@ import { formFlood1Template } from "./templates/form-flood-1.js";
 import { formFlood2Template } from "./templates/form-flood-2.js";
 
 const execFileAsync = promisify(execFile);
-const SCRIPTS_DIR = path.join(os.homedir(), ".oura", "scripts");
+const SCRIPTS_DIR = path.join("/tmp", ".oura", "scripts");
 
 export class K6Runner {
 	private templates: Record<string, (opts: AttackOptions) => string>;
