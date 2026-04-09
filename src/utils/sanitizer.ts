@@ -1,3 +1,3 @@
 export function sanitizeForScript(value: string): string {
-  return JSON.stringify(value);
+	return JSON.stringify(value);
 }

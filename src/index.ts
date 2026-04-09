@@ -7,9 +7,9 @@ import { configCommand } from "./commands/config.js";
 const program = new Command();
 
 program
-  .name("oura")
-  .description("CLI tool for stress-testing web targets using k6")
-  .version("1.0.0");
+	.name("oura")
+	.description("CLI tool for stress-testing web targets using k6")
+	.version("1.0.0");
 
 program.addCommand(attackCommand);
 program.addCommand(reportCommand);
