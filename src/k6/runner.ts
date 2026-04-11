@@ -72,14 +72,23 @@ export class K6Runner {
 		fs.writeFileSync(scriptPath, script);
 		logger.info(`Script written to ${scriptPath}`);
 
-		const args: string[] = ["run", scriptPath];
+		const args: string[] = ["run", scriptPath, "--no-usage-report"];
 
 		if (options.output) {
 			const outputPath = path.resolve(options.output);
 			args.push("--summary-export", outputPath);
 		}
 
-		logger.info("Launching k6...\n");
+		// Print oura ASCII art banner
+		console.log("");
+		console.log("   ____   _    _   ____       _");
+		console.log("  / __ \\ | |  | | |  _ \\     / \\ ");
+		console.log(" | |  | || |  | | | |_) |   / _ \\ ");
+		console.log(" | |  | || |  | | |  _ <   / ___ \\ ");
+		console.log("  \\____/  \\____/  |_| \\_\\ /_/   \\_\\ ");
+		console.log("");
+
+		logger.info("Launching attack...\n");
 
 		const env: Record<string, string> = {
 			...(process.env as Record<string, string>),
