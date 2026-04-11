@@ -80,15 +80,13 @@ export class K6Runner {
 		}
 
 		// Print oura ASCII art banner
-		console.log("");
 		console.log("   ____   _    _   ____       _");
 		console.log("  / __ \\ | |  | | |  _ \\     / \\ ");
 		console.log(" | |  | || |  | | | |_) |   / _ \\ ");
 		console.log(" | |  | || |  | | |  _ <   / ___ \\ ");
 		console.log("  \\____/  \\____/  |_| \\_\\ /_/   \\_\\ ");
-		console.log("");
 
-		logger.info("Launching attack...\n");
+		logger.info("Launching attack...");
 
 		const env: Record<string, string> = {
 			...(process.env as Record<string, string>),
@@ -142,8 +140,9 @@ export class K6Runner {
 						inBanner = false;
 					}
 
-					// Write non-banner lines
-					output.write(`${line}\n`);
+					// Write non-banner lines (avoid double newlines)
+					const lineToWrite = line.endsWith("\n") ? line : `${line}\n`;
+					output.write(lineToWrite);
 				}
 			};
 
