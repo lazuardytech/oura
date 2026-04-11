@@ -3,6 +3,7 @@ import { Command } from "commander";
 import { attackCommand } from "./commands/attack.js";
 import { reportCommand } from "./commands/report.js";
 import { configCommand } from "./commands/config.js";
+import { scanCommand } from "./commands/scan.js";
 
 const program = new Command();
 
@@ -17,6 +18,7 @@ program.helpOption("-h, --help", "Show help information");
 program.addCommand(attackCommand);
 program.addCommand(reportCommand);
 program.addCommand(configCommand);
+program.addCommand(scanCommand);
 
 // Show help if no command provided
 if (process.argv.length === 2) {
