@@ -110,7 +110,28 @@ export class K6Runner {
 			});
 
 			child.stderr.on("data", (data: Buffer) => {
-				process.stderr.write(data);
+				// Filter out k6 Grafana banner lines
+				const lines = data.toString().split("\n");
+				let inBanner = false;
+				for (const line of lines) {
+					// Detect start of banner (Grafana text)
+					if (line.includes("Grafana")) {
+						inBanner = true;
+						continue;
+					}
+					// Detect end of banner (empty line after banner ends)
+					if (inBanner && line.trim() === "") {
+						inBanner = false;
+						continue;
+					}
+					// Skip banner lines (lines with only ASCII art characters)
+					const asciiArtPattern = /^[\s\\/|_\\‾\-()]+$/;
+					if (inBanner || asciiArtPattern.test(line)) {
+						continue;
+					}
+					// Write non-banner lines
+					process.stderr.write(`${line}\n`);
+				}
 			});
 
 			child.on("close", (code: number | null, signal: string | null) => {
