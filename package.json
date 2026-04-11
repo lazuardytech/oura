@@ -1,6 +1,6 @@
 {
 	"name": "@lazuardytech/oura",
-	"version": "1.2.0",
+	"version": "1.2.1",
 	"description": "CLI tool for stress-testing web targets using k6",
 	"main": "dist/index.js",
 	"bin": {
