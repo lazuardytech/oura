@@ -87,7 +87,7 @@ export class K6Runner {
 		console.log("  \\____/  \\____/  |_| \\_\\ /_/   \\_\\ ");
 		console.log("");
 
-		logger.info("Launching attack...\n");
+		logger.info("Launching attack...");
 
 		const env: Record<string, string> = {
 			...(process.env as Record<string, string>),
