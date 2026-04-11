@@ -1,5 +1,14 @@
 # Commands Reference
 
+## Global Flags
+
+Flags available on all commands:
+
+| Flag | Description |
+|------|-------------|
+| `-v, --version` | Show version number |
+| `-h, --help` | Show help information |
+
 ## `oura attack`
 
 Launch a stress test against a target URL.

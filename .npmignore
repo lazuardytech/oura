@@ -1,0 +1,47 @@
+# Source files
+src/
+tsconfig.json
+tsup.config.ts
+
+# Development files
+node_modules/
+.env
+*.log
+.oscache
+.output
+scripts/generated/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Testing
+coverage/
+*.test.ts
+*.spec.ts
+
+# Build tools (but keep dist/)
+.eslintrc*
+.prettierrc*
+biome.json
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Docs (keep README.md, LICENSE)
+docs/
+*.md
+!README.md
+!LICENSE

@@ -9,10 +9,18 @@ const program = new Command();
 program
 	.name("oura")
 	.description("CLI tool for stress-testing web targets using k6")
-	.version("1.0.0");
+	.version("1.0.2", "-v, --version", "Show version number");
+
+// Add help option explicitly
+program.helpOption("-h, --help", "Show help information");
 
 program.addCommand(attackCommand);
 program.addCommand(reportCommand);
 program.addCommand(configCommand);
+
+// Show help if no command provided
+if (process.argv.length === 2) {
+	program.help();
+}
 
 program.parse();

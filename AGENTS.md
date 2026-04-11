@@ -21,7 +21,8 @@ Oura is a CLI tool for stress-testing web targets using k6. It compiles k6 test 
 npm run build      # Build with tsup
 npm run dev        # Watch-mode build
 npm run typecheck  # TypeScript type checking (tsc --noEmit)
-npm run lint       # ESLint
+npm run lint       # Biome lint
+npm run format     # Biome format --write
 npm start          # Run built CLI
 ```
 
@@ -58,7 +59,8 @@ npm start          # Run built CLI
 ## Making Changes
 
 1. Always run `npm run typecheck` after modifying TypeScript files.
-2. Always run `npm run build` before testing changes.
-3. When adding new attack scenarios, create a new template in `src/k6/templates/` and register it in `K6Runner.templates` in `src/k6/runner.ts`.
-4. When adding new CLI commands, create a file in `src/commands/` and register it in `src/index.ts`.
-5. Never commit contents of `dist/` or `node_modules/`.
+2. Always run `npm run lint` and `npm run format` before committing.
+3. Always run `npm run build` before testing changes.
+4. When adding new attack scenarios, create a new template in `src/k6/templates/` and register it in `K6Runner.templates` in `src/k6/runner.ts`.
+5. When adding new CLI commands, create a file in `src/commands/` and register it in `src/index.ts`.
+6. Never commit contents of `dist/` or `node_modules/`.

@@ -17,7 +17,8 @@ After linking, `oura` is available as a global CLI command.
 | `npm run build` | Build with tsup (ESM output to `dist/`) |
 | `npm run dev` | Watch-mode build |
 | `npm run typecheck` | TypeScript type checking (`tsc --noEmit`) |
-| `npm run lint` | ESLint |
+| `npm run lint` | Biome lint |
+| `npm run format` | Biome format --write |
 | `npm start` | Run built CLI (`node dist/index.js`) |
 
 ## Project Structure
@@ -84,6 +85,8 @@ oura/
 ## Testing Changes
 
 1. `npm run typecheck` — verify no type errors
-2. `npm run build` — compile to `dist/`
-3. Run CLI: `node dist/index.js attack -t https://httpbin.org/get -u 5 -d 5s`
-4. Ensure k6 is installed: `k6 version`
+2. `npm run lint` — check for lint issues
+3. `npm run format` — auto-format code
+4. `npm run build` — compile to `dist/`
+5. Run CLI: `node dist/index.js attack -t https://httpbin.org/get -u 5 -d 5s`
+6. Ensure k6 is installed: `k6 version`
