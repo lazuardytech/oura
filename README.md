@@ -5,18 +5,16 @@ No system is really safe.
 > CLI tool for stress-testing web targets using [k6](https://k6.io/).<br/>
 > **Internal security research tool.** Only use against targets you have authorization to test.
 
+## Install
+
+```bash
+npm i -g @lazuardytech/oura
+```
+
 ## Prerequisites
 
 - [Node.js](https://nodejs.org/) >= 20
 - [k6](https://k6.io/docs/get-started/installation/) installed and available in `$PATH`
-
-## Install
-
-```bash
-npm install
-npm run build
-npm link
-```
 
 After linking, the `oura` command is available globally.
 
@@ -113,6 +111,9 @@ src/
 ## Development
 
 ```bash
+npm install
+npm run build
+npm link
 npm run dev       # Watch mode build
 npm run typecheck # Type checking
 npm run lint      # Lint
