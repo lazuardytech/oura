@@ -1,7 +1,8 @@
-# Oura
+# 🐍 oura
 
-CLI tool for stress-testing web targets using [k6](https://k6.io/).
+No system is really safe.
 
+> CLI tool for stress-testing web targets using [k6](https://k6.io/).<br/>
 > **Internal security research tool.** Only use against targets you have authorization to test.
 
 ## Prerequisites
