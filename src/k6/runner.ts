@@ -105,33 +105,54 @@ export class K6Runner {
 		return new Promise<void>((resolve, reject) => {
 			const child = spawn(k6Path, args, { env });
 
-			child.stdout.on("data", (data: Buffer) => {
-				process.stdout.write(data);
-			});
-
-			child.stderr.on("data", (data: Buffer) => {
-				// Filter out k6 Grafana banner lines
+			// Helper function to filter k6 Grafana banner from output
+			const filterOutput = (data: Buffer, output: NodeJS.WriteStream) => {
 				const lines = data.toString().split("\n");
 				let inBanner = false;
+				let bannerLineCount = 0;
+
 				for (const line of lines) {
 					// Detect start of banner (Grafana text)
 					if (line.includes("Grafana")) {
 						inBanner = true;
+						bannerLineCount = 0;
 						continue;
 					}
-					// Detect end of banner (empty line after banner ends)
-					if (inBanner && line.trim() === "") {
+
+					// If in banner mode, count lines and skip ASCII art
+					if (inBanner) {
+						bannerLineCount++;
+						// Check if line is ASCII art (mostly special chars)
+						const cleanLine = line.replace(/\s/g, "");
+						const isAsciiArt =
+							cleanLine.length > 0 && /^[\\/_|‾\-()]+$/.test(cleanLine);
+
+						// Exit banner mode after 6-8 lines of ASCII art or empty line
+						if (
+							bannerLineCount > 8 ||
+							(line.trim() === "" && bannerLineCount > 5)
+						) {
+							inBanner = false;
+							continue;
+						}
+
+						if (isAsciiArt || line.trim() === "") {
+							continue;
+						}
 						inBanner = false;
-						continue;
 					}
-					// Skip banner lines (lines with only ASCII art characters)
-					const asciiArtPattern = /^[\s\\/|_\\‾\-()]+$/;
-					if (inBanner || asciiArtPattern.test(line)) {
-						continue;
-					}
+
 					// Write non-banner lines
-					process.stderr.write(`${line}\n`);
+					output.write(`${line}\n`);
 				}
+			};
+
+			child.stdout.on("data", (data: Buffer) => {
+				filterOutput(data, process.stdout);
+			});
+
+			child.stderr.on("data", (data: Buffer) => {
+				filterOutput(data, process.stderr);
 			});
 
 			child.on("close", (code: number | null, signal: string | null) => {
