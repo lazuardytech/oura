@@ -9,7 +9,7 @@ const program = new Command();
 program
 	.name("oura")
 	.description("CLI tool for stress-testing web targets using k6")
-	.version("1.0.2", "-v, --version", "Show version number");
+	.version("1.0.3", "-v, --version", "Show version number");
 
 // Add help option explicitly
 program.helpOption("-h, --help", "Show help information");
