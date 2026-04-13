@@ -16,6 +16,7 @@ export interface AttackOptions {
 	thresholds: string[];
 	iterations: number;
 	rpsPerVu: number;
+	scanUrl: string;
 }
 
 import { spawn } from "node:child_process";
@@ -29,9 +30,8 @@ import { bombardTemplate } from "./templates/bombard.js";
 import { rampingTemplate } from "./templates/ramping.js";
 import { soakTemplate } from "./templates/soak.js";
 import { stealthTemplate } from "./templates/stealth.js";
-import { formFlood1Template } from "./templates/form-flood-1.js";
-import { formFlood2Template } from "./templates/form-flood-2.js";
-import { formFlood3Template } from "./templates/form-flood-3.js";
+import { formFloodTemplate } from "./templates/form-flood.js";
+import { scanFormFields } from "./templates/utils/form-scanner.js";
 
 const execFileAsync = promisify(execFile);
 const SCRIPTS_DIR = path.join("/tmp", ".oura", "scripts");
@@ -45,17 +45,20 @@ export class K6Runner {
 			ramping: rampingTemplate,
 			soak: soakTemplate,
 			stealth: stealthTemplate,
-			"form-flood-1": formFlood1Template,
-			"form-flood-2": formFlood2Template,
-			"form-flood-3": formFlood3Template,
 		};
 	}
 
-	compileScript(options: AttackOptions): string {
+	async compileScript(options: AttackOptions): Promise<string> {
+		if (options.scenario === "form-flood") {
+			const scanTarget = options.scanUrl || options.target;
+			const scannedForm = await scanFormFields(scanTarget);
+			return formFloodTemplate(options, scannedForm.fields);
+		}
+
 		const templateFn = this.templates[options.scenario];
 		if (!templateFn) {
 			throw new Error(
-				`Unknown scenario: ${options.scenario}. Available: bombard, ramping, soak, stealth, form-flood-1, form-flood-2, form-flood-3`,
+				`Unknown scenario: ${options.scenario}. Available: bombard, ramping, soak, stealth, form-flood`,
 			);
 		}
 		return templateFn(options);

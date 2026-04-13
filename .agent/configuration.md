@@ -10,6 +10,7 @@ Oura stores configuration in `~/.oura/config.json`.
   "defaultVus": 100,
   "defaultDuration": "30s",
   "defaultScenario": "bombard",
+  "defaultRpsPerVu": 1000,
   "lastTarget": ""
 }
 ```
@@ -21,7 +22,8 @@ oura config show           # Display current config
 oura config set k6Path /usr/local/bin/k6
 oura config set defaultVus 200
 oura config set defaultDuration 1m
-oura config set defaultScenario soak
+oura config set defaultScenario stealth
+oura config set defaultRpsPerVu 50
 oura config reset           # Reset to defaults
 ```
 
@@ -33,6 +35,7 @@ oura config reset           # Reset to defaults
 | `defaultVus` | number | `100` | Default number of virtual users |
 | `defaultDuration` | string | `"30s"` | Default test duration |
 | `defaultScenario` | string | `"bombard"` | Default attack scenario |
+| `defaultRpsPerVu` | number | `1000` | Default requests per second per VU |
 | `lastTarget` | string | `""` | Last tested target URL |
 
 ## File Locations

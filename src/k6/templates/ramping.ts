@@ -20,54 +20,137 @@ function buildThresholds(opts: AttackOptions): string {
 	return `,\n  thresholds: {\n${lines.join(",\n")}\n  }`;
 }
 
+function extractHost(target: string): string {
+	const match = target.match(/^https?:\/\/([^/]+)/);
+	return match ? match[1] : target;
+}
+
+function buildOriginTarget(target: string, origin: string): string {
+	return target.replace(/^https?:\/\/[^/]+/, `http://${origin}`);
+}
+
 export function rampingTemplate(opts: AttackOptions): string {
 	const rampStages = parseRampUp(opts.rampUp, opts.vus);
+	const batchSize = Math.min(Math.max(opts.rpsPerVu, 1), 20);
 
 	const headersStr = Object.entries(opts.headers)
 		.map(([k, v]) => `${sanitizeForScript(k)}: ${sanitizeForScript(v)}`)
 		.join(", ");
 
+	const hasProxyList = opts.proxyList.length > 0;
+	const hasOrigin = opts.origin.length > 0;
+	const hostname = extractHost(opts.target);
+	const actualTarget = hasOrigin
+		? sanitizeForScript(buildOriginTarget(opts.target, opts.origin))
+		: sanitizeForScript(opts.target);
+
 	const checkBlock = opts.noCheck
 		? ""
-		: `check(res, {
-    "status was 200": (r) => r.status === 200,
-  });`;
+		: `  for (const res of responses) {
+    check(res, {
+      "status was 200": (r) => r.status === 200,
+    });
+  }`;
+
+	const stealthCheckBlock = opts.noCheck
+		? ""
+		: `  for (const res of responses) {
+      check(res, {
+        "status was 200": (r) => r.status === 200,
+      });
+    }`;
+
+	const xffScript = `
+function randomIP() {
+  const ranges = [[1, 126], [128, 191], [192, 223]];
+  const range = ranges[Math.floor(Math.random() * ranges.length)];
+  const a = Math.floor(Math.random() * (range[1] - range[0] + 1)) + range[0];
+  const b = Math.floor(Math.random() * 256);
+  const c = Math.floor(Math.random() * 256);
+  const d = Math.floor(Math.random() * 254) + 1;
+  return a + "." + b + "." + c + "." + d;
+}
+
+function spoofIPHeaders() {
+  return {
+    "X-Forwarded-For": randomIP(),
+  };
+}
+`;
+
+	const proxyRotationScript = hasProxyList
+		? `
+const PROXY_LIST = JSON.parse(__ENV.PROXY_LIST || "[]");
+
+function randomProxy() {
+  if (PROXY_LIST.length === 0) return undefined;
+  return PROXY_LIST[Math.floor(Math.random() * PROXY_LIST.length)];
+}
+`
+		: "";
+
+	const hostHeader = hasOrigin
+		? `"Host": ${sanitizeForScript(hostname)}, `
+		: "";
+
+	const defaultHeaders = `${hostHeader}${headersStr || `${sanitizeForScript("User-Agent")}: ${sanitizeForScript("oura/1.0")}`}`;
+
+	const proxyParam = hasProxyList
+		? `    const proxyUrl = randomProxy();\n`
+		: "";
+	const proxyObj = hasProxyList
+		? `, ...(proxyUrl ? { proxy: proxyUrl } : {})`
+		: "";
+
+	const buildRequestParams = (headerExpr: string) =>
+		`{ headers: ${headerExpr}, timeout: "10s"${proxyObj} }`;
 
 	const stealthBlock = opts.stealth
 		? `${generateStealthHelpersScript()}
-const BASE_HEADERS = { ${headersStr || `${sanitizeForScript("User-Agent")}: ${sanitizeForScript("oura/1.0")}`} };
+${xffScript}${proxyRotationScript}
+const BASE_HEADERS = { ${defaultHeaders} };
 
 export default function () {
   const stealthHeaders = generateStealthHeaders();
-  const mergedHeaders = Object.assign({}, BASE_HEADERS, stealthHeaders);
-  let res;
-  const params = { headers: mergedHeaders };
+  const mergedHeaders = Object.assign({}, BASE_HEADERS, stealthHeaders, spoofIPHeaders());
+${proxyParam}
+  const params = ${buildRequestParams("mergedHeaders")};
 
-  if (PAYLOAD) {
-    res = http[METHOD](TARGET, PAYLOAD, params);
-  } else {
-    res = http[METHOD](TARGET, params);
+  const requests = [];
+  for (let i = 0; i < BATCH_SIZE; i++) {
+    if (PAYLOAD) {
+      requests.push(["METHOD", TARGET, PAYLOAD, params]);
+    } else {
+      requests.push(["METHOD", TARGET, params]);
+    }
   }
 
-  if (!handleBackoff(res)) {
-    ${checkBlock}
+  let responses;
+  if (!handleBackoff(null)) {
+    responses = http.batch(requests);
+    ${stealthCheckBlock}
     stealthSleep();
   }
 }`
-		: `const HEADERS = { ${headersStr || `${sanitizeForScript("User-Agent")}: ${sanitizeForScript("oura/1.0")}`} };
+		: `${xffScript}${proxyRotationScript}
+const HEADERS = { ${defaultHeaders} };
 
 export default function () {
-  let res;
-  const params = { headers: HEADERS };
+  const reqHeaders = Object.assign({}, HEADERS, spoofIPHeaders());
+${proxyParam}
+  const params = ${buildRequestParams("reqHeaders")};
 
-  if (PAYLOAD) {
-    res = http[METHOD](TARGET, PAYLOAD, params);
-  } else {
-    res = http[METHOD](TARGET, params);
+  const requests = [];
+  for (let i = 0; i < BATCH_SIZE; i++) {
+    if (PAYLOAD) {
+      requests.push(["METHOD", TARGET, PAYLOAD, params]);
+    } else {
+      requests.push(["METHOD", TARGET, params]);
+    }
   }
 
-  ${checkBlock}
-  sleep(1);
+  const responses = http.batch(requests);
+${checkBlock}
 }`;
 
 	const iterationsBlock =
@@ -80,9 +163,10 @@ export const options = {
   stages: ${JSON.stringify(rampStages, null, 2)},${iterationsBlock}${buildThresholds(opts)}
 };
 
-const TARGET = ${sanitizeForScript(opts.target)};
+const TARGET = ${actualTarget};
 const METHOD = ${sanitizeForScript(opts.method.toLowerCase())};
 const PAYLOAD = ${opts.payload ? sanitizeForScript(opts.payload) : "null"};
+const BATCH_SIZE = ${batchSize};
 
 ${stealthBlock}
 `;

@@ -61,15 +61,19 @@ export function bombardTemplate(opts: AttackOptions): string {
 
 	const xffScript = `
 function randomIP() {
-  const ranges = [
-    [1, 126], [128, 191], [192, 223],
-  ];
+  const ranges = [[1, 126], [128, 191], [192, 223]];
   const range = ranges[Math.floor(Math.random() * ranges.length)];
   const a = Math.floor(Math.random() * (range[1] - range[0] + 1)) + range[0];
   const b = Math.floor(Math.random() * 256);
   const c = Math.floor(Math.random() * 256);
   const d = Math.floor(Math.random() * 254) + 1;
   return a + "." + b + "." + c + "." + d;
+}
+
+function spoofIPHeaders() {
+  return {
+    "X-Forwarded-For": randomIP(),
+  };
 }
 `;
 
@@ -107,7 +111,7 @@ const BASE_HEADERS = { ${defaultHeaders} };
 
 export default function () {
   const stealthHeaders = generateStealthHeaders();
-  const mergedHeaders = Object.assign({}, BASE_HEADERS, stealthHeaders, { "X-Forwarded-For": randomIP() });
+  const mergedHeaders = Object.assign({}, BASE_HEADERS, stealthHeaders, spoofIPHeaders());
 ${proxyParam}
   const params = ${buildRequestParams("mergedHeaders")};
 
@@ -131,7 +135,7 @@ ${proxyParam}
 const HEADERS = { ${defaultHeaders} };
 
 export default function () {
-  const reqHeaders = Object.assign({}, HEADERS, { "X-Forwarded-For": randomIP() });
+  const reqHeaders = Object.assign({}, HEADERS, spoofIPHeaders());
 ${proxyParam}
   const params = ${buildRequestParams("reqHeaders")};
 

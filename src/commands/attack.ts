@@ -40,7 +40,7 @@ export const attackCommand = new Command("attack")
 	.option("-H, --headers <string>", "Custom headers (JSON string)", "")
 	.option(
 		"-s, --scenario <type>",
-		"Attack scenario: bombard, ramping, soak, stealth, form-flood-1 (partnership), form-flood-2 (login), form-flood-3 (register)",
+		"Attack scenario: bombard, ramping, soak, stealth, form-flood (auto-detect form fields)",
 		CONFIG.defaultScenario,
 	)
 	.option("-o, --output <path>", "Output path for k6 summary JSON", "")
@@ -69,6 +69,11 @@ export const attackCommand = new Command("attack")
 		"--rps <number>",
 		"Requests per second per VU (default: 1000)",
 		String(CONFIG.defaultRpsPerVu),
+	)
+	.option(
+		"--scan-url <url>",
+		"URL to scan for form fields (for form-flood scenario, when target is an API endpoint)",
+		"",
 	)
 	.action(async (options) => {
 		try {
@@ -133,6 +138,7 @@ export const attackCommand = new Command("attack")
 				thresholds: options.threshold || [],
 				iterations,
 				rpsPerVu: parseInt(options.rps, 10),
+				scanUrl: options.scanUrl || "",
 			};
 
 			if (attackOpts.stealth) {
@@ -150,6 +156,9 @@ export const attackCommand = new Command("attack")
 				logger.info(`Origin bypass: routing directly to ${attackOpts.origin}`);
 			}
 
+			if (attackOpts.scanUrl) {
+				logger.info(`Scan URL: ${attackOpts.scanUrl}`);
+			}
 			logger.info(`Target: ${attackOpts.target}`);
 			logger.info(`Scenario: ${attackOpts.scenario}`);
 			logger.info(
@@ -157,7 +166,7 @@ export const attackCommand = new Command("attack")
 			);
 
 			const runner = new K6Runner();
-			const script = runner.compileScript(attackOpts);
+			const script = await runner.compileScript(attackOpts);
 			await runner.execute(script, attackOpts);
 
 			const config = loadConfig();

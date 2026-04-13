@@ -41,17 +41,28 @@ npm start          # Run built CLI
 |------|---------|
 | `src/index.ts` | CLI entry point, registers commands |
 | `src/commands/attack.ts` | Primary attack command |
+| `src/commands/scan.ts` | Frontend API/WebSocket/webhook scanner |
 | `src/commands/report.ts` | Parses and displays k6 summary JSON |
 | `src/commands/config.ts` | Manages `~/.oura/config.json` |
 | `src/k6/runner.ts` | Compiles scripts from templates and executes k6 |
-| `src/k6/templates/*.ts` | k6 script generators (bombard, ramping, soak) |
+| `src/k6/templates/bombard.ts` | Constant-load scenario |
+| `src/k6/templates/ramping.ts` | Progressive-ramp scenario |
+| `src/k6/templates/soak.ts` | Long-duration soak scenario |
+| `src/k6/templates/stealth.ts` | Stealth mode scenario (rotating headers, delays) |
+| `src/k6/templates/form-flood.ts` | Form auto-detection and flood scenario |
+| `src/k6/templates/utils/stealth.ts` | Shared stealth helpers (User-Agents, headers, IP spoofing, backoff) |
+| `src/k6/templates/utils/form-scanner.ts` | HTML form field detection |
 | `src/utils/logger.ts` | Colored console output |
-| `src/utils/validator.ts` | URL and input validation |
+| `src/utils/validator.ts` | URL, method, proxy, duration, threshold validation |
+| `src/utils/sanitizer.ts` | Script injection sanitization |
+| `src/utils/fetcher.ts` | Node.js HTTP/HTTPS fetcher (no external deps) |
 
 ## Architecture Notes
 
 - The `K6Runner` class in `src/k6/runner.ts` is the core engine. It compiles a k6 script string from a template, writes it to `~/.oura/scripts/`, runs `k6 run <script>`, then cleans up.
 - Templates are plain functions that take `AttackOptions` and return a k6 JavaScript string.
+- The `form-flood` scenario is handled specially: `K6Runner.compileScript()` calls `scanFormFields()` first, then passes detected fields to the template.
+- The `scan` command uses `fetchWithNode()` from `src/utils/fetcher.ts` to fetch pages without external HTTP dependencies.
 - The CLI does not bundle k6; it expects k6 to be available on the system `$PATH` or at common install paths.
 - Config is stored at `~/.oura/config.json`.
 - Generated scripts are ephemeral — written before execution, deleted after.
@@ -64,3 +75,14 @@ npm start          # Run built CLI
 4. When adding new attack scenarios, create a new template in `src/k6/templates/` and register it in `K6Runner.templates` in `src/k6/runner.ts`.
 5. When adding new CLI commands, create a file in `src/commands/` and register it in `src/index.ts`.
 6. Never commit contents of `dist/` or `node_modules/`.
+
+## Pre-Push Checklist
+
+Before pushing to GitHub, **always** run:
+
+```bash
+bun run lint
+bun run format
+```
+
+Both must pass with zero errors. Do not push if either fails.

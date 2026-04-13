@@ -26,23 +26,31 @@ After linking, `oura` is available as a global CLI command.
 ```
 oura/
 ├── src/
-│   ├── index.ts                # CLI entry, shebang, command registration
+│   ├── index.ts                    # CLI entry, shebang, command registration
 │   ├── commands/
-│   │   ├── attack.ts           # oura attack
-│   │   ├── report.ts           # oura report
-│   │   └── config.ts           # oura config (show/set/reset)
+│   │   ├── attack.ts               # oura attack
+│   │   ├── scan.ts                 # oura scan
+│   │   ├── report.ts               # oura report
+│   │   └── config.ts               # oura config (show/set/reset)
 │   ├── k6/
-│   │   ├── runner.ts           # K6Runner class
+│   │   ├── runner.ts               # K6Runner class
 │   │   └── templates/
-│   │       ├── bombard.ts      # Constant-load template
-│   │       ├── ramping.ts      # Progressive-ramp template
-│   │       └── soak.ts         # Long-duration soak template
+│   │       ├── bombard.ts          # Constant-load template
+│   │       ├── ramping.ts          # Progressive-ramp template
+│   │       ├── soak.ts             # Long-duration soak template
+│   │       ├── stealth.ts          # Stealth mode template
+│   │       ├── form-flood.ts       # Form auto-detection & flood template
+│   │       └── utils/
+│   │           ├── stealth.ts      # Stealth helpers (User-Agents, headers, IP spoofing)
+│   │           └── form-scanner.ts # Form field detection from HTML
 │   └── utils/
-│       ├── logger.ts           # Colored console output
-│       └── validator.ts        # URL and input validation
-├── .agent/                     # Agent documentation
-├── AGENTS.md                   # AI agent instructions
-├── README.md                   # Project documentation
+│       ├── logger.ts               # Colored console output
+│       ├── validator.ts            # URL and input validation
+│       ├── sanitizer.ts            # Script injection sanitization
+│       └── fetcher.ts              # Node.js HTTP/HTTPS fetcher
+├── .agent/                         # Agent documentation
+├── AGENTS.md                       # AI agent instructions
+├── README.md                       # Project documentation
 ├── package.json
 ├── tsconfig.json
 └── tsup.config.ts
@@ -56,6 +64,7 @@ oura/
 2. Export a function `(opts: AttackOptions) => string` returning k6 JS
 3. Register in `src/k6/runner.ts` → `K6Runner.templates`
 4. The scenario name becomes the `--scenario` option value
+5. If scenario needs pre-processing (like form-flood), handle it in `compileScript()` before template invocation
 
 ### Adding a new CLI command
 
@@ -69,11 +78,12 @@ oura/
 - Each template is a pure function receiving `AttackOptions` and returning a JavaScript string
 - The generated script must use k6's ES module API (`import http from "k6/http"`)
 - Include response checks unless `--no-check` is set
+- Use `sanitizeForScript()` from `src/utils/sanitizer.ts` when embedding user input in scripts
 
 ### Modifying validation
 
 - All input validation is in `src/utils/validator.ts`
-- Current rules: valid URL, http/https only, no localhost
+- Current rules: valid URL, http/https only, no localhost, valid HTTP method, valid proxy URL format, threshold parsing
 
 ## Build Output
 
